@@ -67,13 +67,14 @@ test "Avro schema bridge — rejects non-record top-level schema" {
     // an error rather than panic.
     var s, err = codec.parseSchemaJson("\"long\"")
     asserts.isTrue(t, err != nil, "expected error for non-record top-level")
-    asserts.equalString(t, s.name, "")
+    // Auto-zero contract: error path returns nil schema slot.
+    asserts.isTrue(t, s == null, "schema is nil on error")
 }
 
 test "Avro schema bridge — rejects malformed JSON" {
     var s, err = codec.parseSchemaJson("{not json}")
     asserts.isTrue(t, err != nil, "expected error for malformed JSON")
-    asserts.equalString(t, s.name, "")
+    asserts.isTrue(t, s == null, "schema is nil on error")
 }
 
 test "Avro schema bridge — array field parses, mapped to FieldType.ARRAY" {

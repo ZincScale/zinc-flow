@@ -171,5 +171,7 @@ test "parseFieldDefs — happy + error" {
 
     var s2, err2 = codec.parseFieldDefs("bad", "id:nonsense")
     asserts.isTrue(t, err2 != nil, "unknown type errors")
-    asserts.equalString(t, s2.name, "")
+    // Error-path now zero-fills the value slot (auto-zero contract);
+    // a `(Schema, error)` thrower's err return makes the Schema slot nil.
+    asserts.isTrue(t, s2 == null, "schema is nil on error")
 }

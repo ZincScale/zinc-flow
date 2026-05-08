@@ -113,7 +113,7 @@ class DecompressContent : ProcessorFn {
     using (var gw = gzip.NewWriterLevel(buf, lvl)) {
         gw.Write(data)
     }
-    return buf.Bytes(), null
+    return buf.Bytes()
 }
 
 (byte[], error) gzipDecompress(byte[] data) {
@@ -129,7 +129,7 @@ class DecompressContent : ProcessorFn {
     else if (level == "smallest") { encLevel = zstd.SpeedBestCompression }
     else if (level == "balanced") { encLevel = zstd.SpeedDefault }
     using (var enc = zstd.NewWriter(null, zstd.WithEncoderLevel(encLevel))) {
-        return enc.EncodeAll(data, byte[0]), null
+        return enc.EncodeAll(data, byte[0])
     }
 }
 
@@ -152,10 +152,10 @@ pub (ProcessorFn, error) CompressContentFactory(ScopedContext ctx, Map<String, S
         level = config["level"]
     }
     var p = ctx.getProvider("content") catch {
-        return CompressContent(algorithm, level, MemoryContentStore()), null
+        return CompressContent(algorithm, level, MemoryContentStore())
     }
     var cp = p as ContentProvider
-    return CompressContent(algorithm, level, cp.getStore()), null
+    return CompressContent(algorithm, level, cp.getStore())
 }
 
 pub (ProcessorFn, error) DecompressContentFactory(ScopedContext ctx, Map<String, String> config) {
@@ -164,8 +164,8 @@ pub (ProcessorFn, error) DecompressContentFactory(ScopedContext ctx, Map<String,
         algorithm = config["algorithm"]
     }
     var p = ctx.getProvider("content") catch {
-        return DecompressContent(algorithm, MemoryContentStore()), null
+        return DecompressContent(algorithm, MemoryContentStore())
     }
     var cp = p as ContentProvider
-    return DecompressContent(algorithm, cp.getStore()), null
+    return DecompressContent(algorithm, cp.getStore())
 }

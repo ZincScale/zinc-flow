@@ -126,7 +126,7 @@ class SchemaRegistry {
     // JSON emission rejects the schema.
     pub (int, error) register(String subject, core.Schema schema) {
         var canonical = emitSchemaJson(schema) catch {
-            return 0, errors.ConfigError("schema canonicalization failed: ${err.Error()}")
+            return errors.ConfigError("schema canonicalization failed: ${err.Error()}")
         }
         lock (mu) {
             var versions = List<VersionEntry>[]
@@ -134,7 +134,7 @@ class SchemaRegistry {
                 versions = subjects[subject]
                 for (existing in versions) {
                     if (existing.canonicalJson == canonical) {
-                        return existing.id, null
+                        return existing.id
                     }
                 }
             }
@@ -147,7 +147,7 @@ class SchemaRegistry {
             versions = append(versions, entry)
             subjects[subject] = versions
             byId[nextId] = schema
-            return nextId, null
+            return nextId
         }
     }
 

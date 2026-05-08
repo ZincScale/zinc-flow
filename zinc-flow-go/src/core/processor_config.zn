@@ -92,9 +92,9 @@ class ProcessorConfig {
     pub (String, error) requireString(String key) {
         var v, ok = getString(key)
         if (!ok) {
-            return "", errors.ConfigError("required config key missing or empty: ${key}")
+            return errors.ConfigError("required config key missing or empty: ${key}")
         }
-        return v, null
+        return v
     }
 
     // keys returns all keys present, regardless of value.
@@ -108,7 +108,7 @@ class ProcessorConfig {
 // string. Negative numbers are supported via leading '-'.
 (int, error) parseInt(String s) {
     if (s == "") {
-        return 0, errors.ConfigError("empty integer string")
+        return errors.ConfigError("empty integer string")
     }
     var negative = false
     var start = 0
@@ -116,19 +116,19 @@ class ProcessorConfig {
         negative = true
         start = 1
         if (len(s) == 1) {
-            return 0, errors.ConfigError("lone '-' is not an integer")
+            return errors.ConfigError("lone '-' is not an integer")
         }
     }
     var n = 0
     for (i in start..len(s)) {
         var c = s[i]
         if (c < byte(48) || c > byte(57)) {
-            return 0, errors.ConfigError("non-digit in integer: ${s}")
+            return errors.ConfigError("non-digit in integer: ${s}")
         }
         n = n * 10 + int(c - byte(48))
     }
     if (negative) {
         n = -n
     }
-    return n, null
+    return n
 }

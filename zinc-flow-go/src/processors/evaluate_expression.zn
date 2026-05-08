@@ -83,21 +83,18 @@ pub (ProcessorFn, error) EvaluateExpressionFactory(ScopedContext ctx, Map<String
         if (trimmed == "") { continue }
         var eqIdx = strings.Index(trimmed, "=")
         if (eqIdx < 0) {
-            return EvaluateExpression(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("expression '${trimmed}' missing '=' separator (expected 'target=expr')")
+            return errors.ConfigError("expression '${trimmed}' missing '=' separator (expected 'target=expr')")
         }
         var target = strings.TrimSpace(trimmed.substring(0, eqIdx))
         var exprSrc = strings.TrimSpace(trimmed.substring(eqIdx + 1))
         if (target == "" || exprSrc == "") {
-            return EvaluateExpression(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("expression '${trimmed}' has empty target or body")
+            return errors.ConfigError("expression '${trimmed}' has empty target or body")
         }
         var c = expressions.compile(exprSrc) catch {
-            return EvaluateExpression(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("expression for '${target}': ${err.Error()}")
+            return errors.ConfigError("expression for '${target}': ${err.Error()}")
         }
         targets = append(targets, target)
         compiled = append(compiled, c)
     }
-    return EvaluateExpression(targets, compiled), null
+    return EvaluateExpression(targets, compiled)
 }

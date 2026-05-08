@@ -169,25 +169,21 @@ pub (ProcessorFn, error) UpdateRecordFactory(ScopedContext ctx, Map<String, Stri
         if (trimmed == "") { continue }
         var eqIdx = strings.Index(trimmed, "=")
         if (eqIdx <= 0) {
-            return UpdateRecord(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("UpdateRecord: malformed pair '${trimmed}' — expected 'field = expression'")
+            return errors.ConfigError("UpdateRecord: malformed pair '${trimmed}' — expected 'field = expression'")
         }
         var field = strings.TrimSpace(trimmed.substring(0, eqIdx))
         var exprSrc = strings.TrimSpace(trimmed.substring(eqIdx + 1))
         if (field == "") {
-            return UpdateRecord(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("UpdateRecord: empty field name in '${trimmed}'")
+            return errors.ConfigError("UpdateRecord: empty field name in '${trimmed}'")
         }
         if (exprSrc == "") {
-            return UpdateRecord(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("UpdateRecord: empty expression for field '${field}'")
+            return errors.ConfigError("UpdateRecord: empty expression for field '${field}'")
         }
         var c = expressions.compile(exprSrc) catch {
-            return UpdateRecord(List<String>[], List<CompiledExpression>[]),
-                errors.ConfigError("UpdateRecord: field '${field}' has invalid expression '${exprSrc}': ${err.Error()}")
+            return errors.ConfigError("UpdateRecord: field '${field}' has invalid expression '${exprSrc}': ${err.Error()}")
         }
         fields = append(fields, field)
         compiled = append(compiled, c)
     }
-    return UpdateRecord(fields, compiled), null
+    return UpdateRecord(fields, compiled)
 }

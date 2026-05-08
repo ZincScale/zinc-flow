@@ -135,29 +135,24 @@ pub (ProcessorFn, error) RouteRecordFactory(ScopedContext ctx, Map<String, Strin
         }
         var colonIdx = strings.Index(entry, ":")
         if (colonIdx <= 0) {
-            return RouteRecord(List<RouteRule>[]),
-                errors.ConfigError("RouteRecord: malformed route at index ${str(idx)}: '${entry}' — expected 'name: expression'")
+            return errors.ConfigError("RouteRecord: malformed route at index ${str(idx)}: '${entry}' — expected 'name: expression'")
         }
         var name = strings.TrimSpace(entry.substring(0, colonIdx))
         var exprSrc = strings.TrimSpace(entry.substring(colonIdx + 1))
         if (name == "") {
-            return RouteRecord(List<RouteRule>[]),
-                errors.ConfigError("RouteRecord: route at index ${str(idx)} has empty name")
+            return errors.ConfigError("RouteRecord: route at index ${str(idx)} has empty name")
         }
         if (exprSrc == "") {
-            return RouteRecord(List<RouteRule>[]),
-                errors.ConfigError("RouteRecord: route '${name}' has empty expression")
+            return errors.ConfigError("RouteRecord: route '${name}' has empty expression")
         }
         if (name == "unmatched") {
-            return RouteRecord(List<RouteRule>[]),
-                errors.ConfigError("RouteRecord: 'unmatched' is reserved for records that match no route")
+            return errors.ConfigError("RouteRecord: 'unmatched' is reserved for records that match no route")
         }
         var c = expressions.compile(exprSrc) catch {
-            return RouteRecord(List<RouteRule>[]),
-                errors.ConfigError("RouteRecord: route '${name}' has invalid expression '${exprSrc}': ${err.Error()}")
+            return errors.ConfigError("RouteRecord: route '${name}' has invalid expression '${exprSrc}': ${err.Error()}")
         }
         rules = append(rules, RouteRule(name, c))
         idx = idx + 1
     }
-    return RouteRecord(rules), null
+    return RouteRecord(rules)
 }

@@ -40,11 +40,11 @@ bool isSupportedCodec(String c) {
 pub (core.Schema, List<GenericRecord>, error) readOcf(byte[] data) {
     var zero = core.Schema("", List<core.Field>[])
     if (len(data) == 0) {
-        return zero, List<GenericRecord>[], errors.ConfigError("OCF empty input")
+        return errors.ConfigError("OCF empty input")
     }
     var rdr = bytes.NewReader(data)
     var dec = hambaOcf.NewDecoder(rdr) catch {
-        return zero, List<GenericRecord>[], err
+        return err
     }
 
     // hamba doesn't expose the parsed writer schema directly, but
@@ -53,17 +53,17 @@ pub (core.Schema, List<GenericRecord>, error) readOcf(byte[] data) {
     // the zinc side, and use that as the canonical schema.
     var meta = dec.Metadata()
     if (!meta.containsKey("avro.schema")) {
-        return zero, List<GenericRecord>[], errors.ConfigError("OCF metadata missing avro.schema")
+        return errors.ConfigError("OCF metadata missing avro.schema")
     }
     var schema = parseSchemaJson(string(meta["avro.schema"])) catch {
-        return zero, List<GenericRecord>[], errors.ConfigError("OCF schema invalid: ${err.Error()}")
+        return errors.ConfigError("OCF schema invalid: ${err.Error()}")
     }
 
     var records = List<GenericRecord>[]
     while (dec.HasNext()) {
         var raw = Map<String, Object>{}
         dec.Decode(&raw) catch {
-            return zero, records, err
+            return err
         }
         var rec = GenericRecord(schema)
         for (k, v in raw) {
@@ -74,7 +74,7 @@ pub (core.Schema, List<GenericRecord>, error) readOcf(byte[] data) {
     if (dec.Error() != null) {
         return zero, records, dec.Error()
     }
-    return schema, records, null
+    return schema, records
 }
 
 // --- OCF writer ---------------------------------------------------------
@@ -84,21 +84,21 @@ pub (core.Schema, List<GenericRecord>, error) readOcf(byte[] data) {
 // behavior — hamba flushes on Close).
 pub (byte[], error) writeOcf(List<GenericRecord> records, core.Schema schema, String codec) {
     if (!isSupportedCodec(codec)) {
-        return byte[0], errors.ConfigError("unsupported OCF codec: ${codec}")
+        return errors.ConfigError("unsupported OCF codec: ${codec}")
     }
     var schemaJson = emitSchemaJson(schema) catch {
-        return byte[0], errors.ConfigError("OCF schema JSON emit failed: ${err.Error()}")
+        return errors.ConfigError("OCF schema JSON emit failed: ${err.Error()}")
     }
 
     var buf = new bytes.Buffer
     using (var enc = hambaOcf.NewEncoder(schemaJson, buf, hambaOcf.WithCodec(hambaOcf.CodecName(codec))) catch { return byte[0], err }) {
         for (rec in records) {
             enc.Encode(coerceForSchema(rec, schema)) catch {
-                return byte[0], err
+                return err
             }
         }
     }
-    return buf.Bytes(), null
+    return buf.Bytes()
 }
 
 // --- Processors ---------------------------------------------------------
@@ -233,14 +233,14 @@ class ConvertOCFToRecord : ProcessorFn {
     // versions get picked up).
     (core.Schema, error) resolveReaderFromRegistry() {
         if (schemaRegistry == null) {
-            return core.Schema("", List<core.Field>[]), errors.ConfigError("schema_registry not configured")
+            return errors.ConfigError("schema_registry not configured")
         }
         var sr = schemaRegistry as SchemaRegistry
 
         if (readerSchemaVersion != "latest") {
             lock (resolveMu) {
                 if (resolvedReaderSchema != null) {
-                    return resolvedReaderSchema as core.Schema, null
+                    return resolvedReaderSchema as core.Schema
                 }
             }
         }
@@ -250,12 +250,12 @@ class ConvertOCFToRecord : ProcessorFn {
             entry = sr.getLatest(readerSchemaSubject)
         } else {
             var v = strconv.Atoi(readerSchemaVersion) catch {
-                return core.Schema("", List<core.Field>[]), errors.ConfigError("invalid version '${readerSchemaVersion}': not an integer")
+                return errors.ConfigError("invalid version '${readerSchemaVersion}': not an integer")
             }
             entry = sr.getEntry(readerSchemaSubject, v)
         }
         if (entry == null) {
-            return core.Schema("", List<core.Field>[]), errors.ConfigError("subject '${readerSchemaSubject}' version '${readerSchemaVersion}' not found")
+            return errors.ConfigError("subject '${readerSchemaSubject}' version '${readerSchemaVersion}' not found")
         }
         var schema = (entry as VersionEntry).schema
 
@@ -264,7 +264,7 @@ class ConvertOCFToRecord : ProcessorFn {
                 resolvedReaderSchema = schema
             }
         }
-        return schema, null
+        return schema
     }
 }
 
@@ -287,14 +287,14 @@ pub (ProcessorFn, error) ConvertOCFToRecordFactory(ScopedContext ctx, Map<String
     }
 
     if (inlineReader != "" && subject != "") {
-        return null, errors.ConfigError("ConvertOCFToRecord: set readerSchema OR readerSchemaSubject, not both")
+        return errors.ConfigError("ConvertOCFToRecord: set readerSchema OR readerSchemaSubject, not both")
     }
 
     // Registry lookup: only when the user actually asked for it.
     SchemaRegistry? sr = null
     if (subject != "" || autoRegister != "") {
         var p = ctx.getProvider("schema_registry") catch {
-            return null, errors.ConfigError("ConvertOCFToRecord: readerSchemaSubject/autoRegisterSubject require the 'schema_registry' provider")
+            return errors.ConfigError("ConvertOCFToRecord: readerSchemaSubject/autoRegisterSubject require the 'schema_registry' provider")
         }
         var srp = p as SchemaRegistryProvider
         sr = srp.getRegistry()
@@ -303,10 +303,10 @@ pub (ProcessorFn, error) ConvertOCFToRecordFactory(ScopedContext ctx, Map<String
     // Content store path mirrors ConvertAvroToRecordFactory: fall back to
     // MemoryContentStore when no provider is registered (test fixtures, etc.).
     var p = ctx.getProvider("content") catch {
-        return buildOCFReader(MemoryContentStore(), inlineReader, sr, subject, version, autoRegister), null
+        return buildOCFReader(MemoryContentStore(), inlineReader, sr, subject, version, autoRegister)
     }
     var cp = p as ContentProvider
-    return buildOCFReader(cp.getStore(), inlineReader, sr, subject, version, autoRegister), null
+    return buildOCFReader(cp.getStore(), inlineReader, sr, subject, version, autoRegister)
 }
 
 ConvertOCFToRecord buildOCFReader(ContentStore store, String inlineReader,
@@ -359,9 +359,9 @@ pub (ProcessorFn, error) ConvertRecordToOCFFactory(ScopedContext ctx, Map<String
         codec = config["codec"]
     }
     if (!isSupportedCodec(codec)) {
-        return null, errors.ConfigError("ConvertRecordToOCF: unsupported codec '${codec}' — valid: null, deflate, snappy, zstandard")
+        return errors.ConfigError("ConvertRecordToOCF: unsupported codec '${codec}' — valid: null, deflate, snappy, zstandard")
     }
-    return ConvertRecordToOCF(codec), null
+    return ConvertRecordToOCF(codec)
 }
 
 // Reader-schema projection lives in schema_resolver.zn (check + project) —

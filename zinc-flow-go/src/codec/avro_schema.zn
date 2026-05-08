@@ -29,24 +29,23 @@ type JsonObject = Map<String, Object>
 
 // parseSchemaJson — JSON Avro schema text → local core.Schema.
 pub (Schema, error) parseSchemaJson(String text) {
-    var zero = Schema("", List<Field>[])
     var raw = Map<String, Object>{}
     var data = text.toBytes()
     json.Unmarshal(data, &raw) catch {
-        return zero, errors.ConfigError("invalid JSON: ${err.Error()}")
+        return errors.ConfigError("invalid JSON: ${err.Error()}")
     }
 
     var typeStr = raw["type"] as String catch {
-        return zero, errors.ConfigError("schema: missing or non-string 'type'")
+        return errors.ConfigError("schema: missing or non-string 'type'")
     }
     if (typeStr != "record") {
-        return zero, errors.ConfigError("top-level avro schema must be a record, got: ${typeStr}")
+        return errors.ConfigError("top-level avro schema must be a record, got: ${typeStr}")
     }
 
     var name = "root"
     if (raw.containsKey("name")) {
         var n = raw["name"] as String catch {
-            return zero, errors.ConfigError("'name' must be a string")
+            return errors.ConfigError("'name' must be a string")
         }
         if (n != "") {
             name = n
@@ -54,29 +53,29 @@ pub (Schema, error) parseSchemaJson(String text) {
     }
 
     if (!raw.containsKey("fields")) {
-        return zero, errors.ConfigError("record schema missing 'fields' array")
+        return errors.ConfigError("record schema missing 'fields' array")
     }
     var fieldList = raw["fields"] as JsonArray catch {
-        return zero, errors.ConfigError("'fields' must be an array")
+        return errors.ConfigError("'fields' must be an array")
     }
 
     var fields = List<Field>[]
     for (item in fieldList) {
         var fobj = item as JsonObject catch {
-            return zero, errors.ConfigError("each field must be an object")
+            return errors.ConfigError("each field must be an object")
         }
         if (!fobj.containsKey("name") || !fobj.containsKey("type")) {
-            return zero, errors.ConfigError("field missing 'name' or 'type'")
+            return errors.ConfigError("field missing 'name' or 'type'")
         }
         var fname = fobj["name"] as String catch {
-            return zero, errors.ConfigError("field 'name' must be a string")
+            return errors.ConfigError("field 'name' must be a string")
         }
         var ftype = parseTypeToken(fobj["type"]) catch {
-            return zero, errors.ConfigError("field '${fname}': ${err.Error()}")
+            return errors.ConfigError("field '${fname}': ${err.Error()}")
         }
         fields = append(fields, Field(fname, ftype, null))
     }
-    return Schema(name, fields), null
+    return Schema(name, fields)
 }
 
 // parseTypeToken — handles primitive string, nullable-union array, and
@@ -88,30 +87,30 @@ pub (Schema, error) parseSchemaJson(String text) {
         var arr = token as JsonArray catch {
             // Annotated object: {"type": T, "logicalType": ...}.
             var obj = token as JsonObject catch {
-                return STRING, errors.ConfigError("unsupported type token shape")
+                return errors.ConfigError("unsupported type token shape")
             }
             if (!obj.containsKey("type")) {
-                return STRING, errors.ConfigError("type object missing 'type'")
+                return errors.ConfigError("type object missing 'type'")
             }
             var inner = obj["type"] as String catch {
-                return STRING, errors.ConfigError("nested annotated type not supported")
+                return errors.ConfigError("nested annotated type not supported")
             }
-            return mapPrimitive(inner), null
+            return mapPrimitive(inner)
         }
         // Walk the union; ignore "null", take first non-null.
         for (item in arr) {
             var iname = item as String catch {
                 // Could be an annotated object inside the union — recurse.
                 var ft, e = parseTypeToken(item)
-                if (e == null) { return ft, null }
+                if (e == null) { return ft }
                 continue
             }
             if (iname == "null") { continue }
-            return mapPrimitive(iname), null
+            return mapPrimitive(iname)
         }
-        return STRING, errors.ConfigError("union with no non-null branch")
+        return errors.ConfigError("union with no non-null branch")
     }
-    return mapPrimitive(s), null
+    return mapPrimitive(s)
 }
 
 FieldType mapPrimitive(String name) {
@@ -165,9 +164,9 @@ pub (String, error) emitSchemaJson(Schema s) {
     root["fields"] = fieldArr
 
     var out = json.Marshal(root) catch {
-        return "", err
+        return err
     }
-    return string(out), null
+    return string(out)
 }
 
 // schemaFromHamba / schemaToHamba — kept as no-op shims so existing
@@ -175,11 +174,11 @@ pub (String, error) emitSchemaJson(Schema s) {
 // the hamba-removal phase. Will be deleted once hamba is dropped from
 // zinc.toml.
 pub (Schema, error) schemaFromHamba(Schema hs) {
-    return hs, null
+    return hs
 }
 
 pub (Schema, error) schemaToHamba(Schema s) {
-    return s, null
+    return s
 }
 
 // stripWhitespace — tolerated leading/trailing whitespace in JSON input,

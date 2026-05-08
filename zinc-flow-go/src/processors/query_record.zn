@@ -117,11 +117,10 @@ pub (ProcessorFn, error) QueryRecordFactory(ScopedContext ctx, Map<String, Strin
     }
     if (query == "") { query = "$" }
     if (query == "$" || query == "$[*]") {
-        return QueryRecord(query, true, default(ojgJp.Expr)), null
+        return QueryRecord(query, true, default(ojgJp.Expr))
     }
     var expr = ojgJp.ParseString(query) catch {
-        return QueryRecord(query, false, default(ojgJp.Expr)),
-            errors.ConfigError("QueryRecord: bad JSONPath '${query}': ${err.Error()}")
+        return errors.ConfigError("QueryRecord: bad JSONPath '${query}': ${err.Error()}")
     }
-    return QueryRecord(query, false, expr), null
+    return QueryRecord(query, false, expr)
 }

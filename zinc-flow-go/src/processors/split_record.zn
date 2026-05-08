@@ -70,5 +70,5 @@ String padLeft(String s, int width, String pad) {
 }
 
 pub (ProcessorFn, error) SplitRecordFactory(ScopedContext ctx, Map<String, String> config) {
-    return SplitRecord(), null
+    return SplitRecord()
 }

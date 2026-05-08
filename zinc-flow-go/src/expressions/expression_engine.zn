@@ -434,21 +434,21 @@ EvalValue callFunction(String name, List<EvalValue> args) {
 // out of the hot path when the same expression is used per-record.
 pub (CompiledExpression, error) compile(String expression) {
     var tokens = tokenize(expression) catch {
-        return CompiledExpression(List<Token>[]), err
+        return err
     }
     var rpn = toRpn(tokens) catch {
-        return CompiledExpression(List<Token>[]), err
+        return err
     }
-    return CompiledExpression(rpn), null
+    return CompiledExpression(rpn)
 }
 
 // evaluate compiles and runs in one shot. For per-record loops use
 // compile() once and call .eval() per record to amortize parsing.
 pub (EvalValue, error) evaluate(String expression, ValueResolver context) {
     var compiled = compile(expression) catch {
-        return evalNull(), err
+        return err
     }
-    return compiled.eval(context), null
+    return compiled.eval(context)
 }
 
 // --- Tokenizer ------------------------------------------------------------
@@ -464,7 +464,7 @@ pub (EvalValue, error) evaluate(String expression, ValueResolver context) {
         }
         if (c >= byte(48) && c <= byte(57)) {
             var nextI, tok = readNumber(src, i) catch {
-                return List<Token>[], err
+                return err
             }
             tokens = append(tokens, tok)
             i = nextI
@@ -472,7 +472,7 @@ pub (EvalValue, error) evaluate(String expression, ValueResolver context) {
         }
         if (c == byte(34) || c == byte(39)) {
             var nextI, tok = readString(src, i) catch {
-                return List<Token>[], err
+                return err
             }
             tokens = append(tokens, tok)
             i = nextI
@@ -499,7 +499,7 @@ pub (EvalValue, error) evaluate(String expression, ValueResolver context) {
                 i = i + 2
                 continue
             }
-            return List<Token>[], errors.ConfigError("unexpected '=' at position ${i} (use '==' for equality)")
+            return errors.ConfigError("unexpected '=' at position ${i} (use '==' for equality)")
         }
         if (c == byte(33)) {
             if (i + 1 < len(src) && src[i + 1] == byte(61)) {
@@ -537,7 +537,7 @@ pub (EvalValue, error) evaluate(String expression, ValueResolver context) {
                 i = i + 2
                 continue
             }
-            return List<Token>[], errors.ConfigError("unexpected '&' at position ${i} (use '&&' for logical and)")
+            return errors.ConfigError("unexpected '&' at position ${i} (use '&&' for logical and)")
         }
         if (c == byte(124)) {
             if (i + 1 < len(src) && src[i + 1] == byte(124)) {
@@ -545,11 +545,11 @@ pub (EvalValue, error) evaluate(String expression, ValueResolver context) {
                 i = i + 2
                 continue
             }
-            return List<Token>[], errors.ConfigError("unexpected '|' at position ${i} (use '||' for logical or)")
+            return errors.ConfigError("unexpected '|' at position ${i} (use '||' for logical or)")
         }
-        return List<Token>[], errors.ConfigError("unexpected character at position ${i}")
+        return errors.ConfigError("unexpected character at position ${i}")
     }
-    return tokens, null
+    return tokens
 }
 
 bool isAlpha(byte c) {
@@ -582,14 +582,14 @@ bool isAlnum(byte c) {
     var text = src.substring(start, i)
     if (isDouble) {
         var d = strconv.ParseFloat(text, 64) catch {
-            return 0, tkBare(TK_NULL), errors.ConfigError("invalid number literal: ${text}")
+            return errors.ConfigError("invalid number literal: ${text}")
         }
-        return i, tkNumberDouble(d), null
+        return i, tkNumberDouble(d)
     }
     var l = strconv.ParseInt(text, 10, 64) catch {
-        return 0, tkBare(TK_NULL), errors.ConfigError("invalid number literal: ${text}")
+        return errors.ConfigError("invalid number literal: ${text}")
     }
-    return i, tkNumberLong(l), null
+    return i, tkNumberLong(l)
 }
 
 (int, Token, error) readString(String src, int start) {
@@ -610,9 +610,9 @@ bool isAlnum(byte c) {
         }
     }
     if (i >= len(src)) {
-        return 0, tkBare(TK_NULL), errors.ConfigError("unterminated string literal at ${start}")
+        return errors.ConfigError("unterminated string literal at ${start}")
     }
-    return i + 1, tkString(string(out)), null
+    return i + 1, tkString(string(out))
 }
 
 (int, Token) readIdent(String src, int start) {
@@ -689,7 +689,7 @@ bool isOperator(int kind) {
                 ops = ops[0..len(ops) - 1]
             }
             if (len(arity) == 0) {
-                return List<Token>[], errors.ConfigError("comma outside function call")
+                return errors.ConfigError("comma outside function call")
             }
             if (sawValue[len(sawValue) - 1]) {
                 arity[len(arity) - 1] = arity[len(arity) - 1] + 1
@@ -703,7 +703,7 @@ bool isOperator(int kind) {
                 ops = ops[0..len(ops) - 1]
             }
             if (len(ops) == 0) {
-                return List<Token>[], errors.ConfigError("mismatched parentheses")
+                return errors.ConfigError("mismatched parentheses")
             }
             ops = ops[0..len(ops) - 1] // discard LParen
             // If a Function is now on top, finalize its arity.
@@ -748,9 +748,9 @@ bool isOperator(int kind) {
         var op = ops[len(ops) - 1]
         ops = ops[0..len(ops) - 1]
         if (op.kind == TK_LPAREN || op.kind == TK_RPAREN) {
-            return List<Token>[], errors.ConfigError("mismatched parentheses")
+            return errors.ConfigError("mismatched parentheses")
         }
         output = append(output, op)
     }
-    return output, null
+    return output
 }

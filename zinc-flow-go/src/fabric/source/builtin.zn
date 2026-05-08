@@ -33,7 +33,7 @@ pub void registerBuiltinSources(SourceRegistry reg) {
     if (content == "") {
         // Required-key omission: factory returns null source + null
         // error so the loader skips this instance (parity with csharp).
-        return null, null
+        return null
     }
     var contentType = ""
     if (config.containsKey("contentType")) { contentType = config["contentType"] }
@@ -47,7 +47,7 @@ pub void registerBuiltinSources(SourceRegistry reg) {
     if (config.containsKey("pollIntervalMs") && config["pollIntervalMs"] != "") {
         pollMs = strconv.Atoi(config["pollIntervalMs"]) catch { 1000 }
     }
-    return GenerateFlowFile(name, pollMs, content, contentType, attrs, batchSize), null
+    return GenerateFlowFile(name, pollMs, content, contentType, attrs, batchSize)
 }
 
 (ConnectorSource, error) ListenHTTPFactory(String name, Map<String, String> config, ContentStore store) {
@@ -58,7 +58,7 @@ pub void registerBuiltinSources(SourceRegistry reg) {
     if (port <= 0) {
         // No port = disabled. Operators must opt in; we never default to
         // a port that could collide with the management server.
-        return null, null
+        return null
     }
     var path = "/"
     if (config.containsKey("path") && config["path"] != "") {
@@ -68,14 +68,14 @@ pub void registerBuiltinSources(SourceRegistry reg) {
     if (config.containsKey("maxBodyBytes") && config["maxBodyBytes"] != "") {
         maxBytes = strconv.Atoi(config["maxBodyBytes"]) catch { 16 * 1024 * 1024 }
     }
-    return ListenHTTP(name, port, path, maxBytes), null
+    return ListenHTTP(name, port, path, maxBytes)
 }
 
 (ConnectorSource, error) GetFileFactory(String name, Map<String, String> config, ContentStore store) {
     var dir = ""
     if (config.containsKey("inputDir")) { dir = config["inputDir"] }
     if (dir == "") {
-        return null, null
+        return null
     }
     var pattern = "*"
     if (config.containsKey("pattern") && config["pattern"] != "") {
@@ -85,5 +85,5 @@ pub void registerBuiltinSources(SourceRegistry reg) {
     if (config.containsKey("moveSubdir") && config["moveSubdir"] != "") {
         moveSubdir = config["moveSubdir"]
     }
-    return GetFile(name, dir, moveSubdir, pattern), null
+    return GetFile(name, dir, moveSubdir, pattern)
 }

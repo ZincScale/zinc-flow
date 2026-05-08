@@ -112,10 +112,10 @@ pub (ProcessorFn, error) ConvertAvroToRecordFactory(ScopedContext ctx, Map<Strin
         fieldDefs = config["fieldDefs"]
     }
     var p = ctx.getProvider("content") catch {
-        return ConvertAvroToRecord(schemaName, fieldDefs, MemoryContentStore()), null
+        return ConvertAvroToRecord(schemaName, fieldDefs, MemoryContentStore())
     }
     var cp = p as ContentProvider
-    return ConvertAvroToRecord(schemaName, fieldDefs, cp.getStore()), null
+    return ConvertAvroToRecord(schemaName, fieldDefs, cp.getStore())
 }
 
 // --- ConvertRecordToAvro processor -------------------------------------
@@ -167,7 +167,7 @@ class ConvertRecordToAvro : ProcessorFn {
 }
 
 pub (ProcessorFn, error) ConvertRecordToAvroFactory(ScopedContext ctx, Map<String, String> config) {
-    return ConvertRecordToAvro(), null
+    return ConvertRecordToAvro()
 }
 
 // coerceForSchema returns a map[string]any whose value Go-types match what
@@ -273,7 +273,7 @@ pub (core.Schema, error) parseFieldDefs(String name, String defs) {
     var fields = List<core.Field>[]
     var trimmed = strings.TrimSpace(defs)
     if (trimmed == "") {
-        return core.Schema(name, fields), null
+        return core.Schema(name, fields)
     }
     for (part in strings.Split(trimmed, ",")) {
         var p = strings.TrimSpace(part)
@@ -282,19 +282,19 @@ pub (core.Schema, error) parseFieldDefs(String name, String defs) {
         }
         var idx = strings.Index(p, ":")
         if (idx < 0) {
-            return core.Schema("", List<core.Field>[]), errors.ConfigError("malformed field def '${p}' — expected 'name:type'")
+            return errors.ConfigError("malformed field def '${p}' — expected 'name:type'")
         }
         var fname = strings.TrimSpace(p[0:idx])
         var ftypeStr = strings.ToLower(strings.TrimSpace(p[idx+1:len(p)]))
         if (fname == "" || ftypeStr == "") {
-            return core.Schema("", List<core.Field>[]), errors.ConfigError("malformed field def '${p}' — expected 'name:type'")
+            return errors.ConfigError("malformed field def '${p}' — expected 'name:type'")
         }
         var ft = fieldTypeFromName(ftypeStr) catch {
-            return core.Schema("", List<core.Field>[]), errors.ConfigError("field '${fname}': ${err.Error()}")
+            return errors.ConfigError("field '${fname}': ${err.Error()}")
         }
         fields = append(fields, core.Field(fname, ft, null))
     }
-    return core.Schema(name, fields), null
+    return core.Schema(name, fields)
 }
 
 pub String emitFieldDefs(core.Schema s) {
@@ -306,15 +306,15 @@ pub String emitFieldDefs(core.Schema s) {
 }
 
 (FieldType, error) fieldTypeFromName(String name) {
-    if (name == "null")                        { return NULL,    null }
-    if (name == "boolean" || name == "bool")   { return BOOLEAN, null }
-    if (name == "int" || name == "int32")      { return INT,     null }
-    if (name == "long" || name == "int64")     { return LONG,    null }
-    if (name == "float" || name == "float32")  { return FLOAT,   null }
-    if (name == "double" || name == "float64") { return DOUBLE,  null }
-    if (name == "string")                      { return STRING,  null }
-    if (name == "bytes")                       { return BYTES,   null }
-    return NULL, errors.ConfigError("unknown field type '${name}' — valid: null, boolean, int, long, float, double, string, bytes")
+    if (name == "null")                        { return NULL }
+    if (name == "boolean" || name == "bool")   { return BOOLEAN }
+    if (name == "int" || name == "int32")      { return INT }
+    if (name == "long" || name == "int64")     { return LONG }
+    if (name == "float" || name == "float32")  { return FLOAT }
+    if (name == "double" || name == "float64") { return DOUBLE }
+    if (name == "string")                      { return STRING }
+    if (name == "bytes")                       { return BYTES }
+    return errors.ConfigError("unknown field type '${name}' — valid: null, boolean, int, long, float, double, string, bytes")
 }
 
 String fieldTypeName(FieldType ft) {
