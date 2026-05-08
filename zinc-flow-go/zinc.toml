@@ -19,4 +19,4 @@ viper         = "github.com/spf13/viper"
 httptest      = "net/http/httptest"
 
 [replace]
-stdlib = "../../zinc/zinc-go/stdlib/zinc-out"
+stdlib = "../../zinc/compilers/zinc-go/stdlib/zinc-out"
